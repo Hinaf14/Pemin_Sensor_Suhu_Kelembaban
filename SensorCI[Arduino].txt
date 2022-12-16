@@ -1,0 +1,59 @@
+#include "DHT.h"
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
+
+#define DHTPIN 5 //D1     
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// Network SSID
+const char* ssid = "Redmi Note 9 Pro";
+const char* password = "08297468";
+
+const char* host = "192.168.157.1";  //IP Komputer / server
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("DHT11 test!"));
+
+  dht.begin();
+
+  WiFi.hostname("NodeMCU");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+
+
+}
+
+void loop() {
+  int h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  WiFiClient client;
+  const int httpPort = 80;
+  if (!client.connect(host, httpPort)) {
+    Serial.println("connection failed");
+    return;
+  }
+
+  String Link;
+  HTTPClient http;
+  //GET Data
+  Link = "http://" + String(host) + "/sensorci/Welcome/update/"+String(t)+"/" + String(h);
+  http.begin(client,Link);     
+  http.GET();
+  http.end();
+}
